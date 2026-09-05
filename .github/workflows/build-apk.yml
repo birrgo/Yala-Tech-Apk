@@ -1,4 +1,4 @@
-name: Convert PWA to Release AAB
+Name: Convert PWA to Release AAB
 
 on:
   push:
@@ -65,8 +65,9 @@ jobs:
 
       - name: Set Dynamic Version Code
         run: |
-          sed -i 's/versionCode 1/versionCode ${{ github.run_number }}/' android/app/build.gradle
-          sed -i 's/versionName "1.0"/versionName "1.0.${{ github.run_number }}"/' android/app/build.gradle
+          VERSION_CODE=$(date +%s)
+          sed -i "s/versionCode 1/versionCode $VERSION_CODE/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
 
       - name: Fix Android Hardware Back Button
         run: |
