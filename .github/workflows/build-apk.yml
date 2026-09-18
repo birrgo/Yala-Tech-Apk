@@ -271,7 +271,8 @@ jobs:
 
       - name: Set Version Code and Name
         run: |
-          sed -i "s/versionCode [0-9]*/versionCode \$(( 1786604000 + ${{ github.run_number }} ))/" android/app/build.gradle
+          VERSION_CODE=$(( 1786604000 + ${{ github.run_number }} ))
+          sed -i "s/versionCode [0-9]*/versionCode $VERSION_CODE/" android/app/build.gradle
           sed -i 's/versionName "[^"]*"/versionName "1.0.5"/' android/app/build.gradle
 
       - name: Add Google Services JSON
