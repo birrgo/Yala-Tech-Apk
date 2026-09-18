@@ -10,7 +10,7 @@ env:
   APP_NAME: "Yala Tech"
   PACKAGE_NAME: "com.yalatech.app"
   # Replace with the actual AdMob App ID for Yala Tech if different
-  ADMOB_APP_ID: "ca-app-pub-1118823918279022~8410967279" 
+  ADMOB_APP_ID: "ca-app-pub-1118823918279022~2670102739" 
 
 jobs:
   build:
