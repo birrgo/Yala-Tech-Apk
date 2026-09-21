@@ -27,7 +27,6 @@ jobs:
       - name: Install Dependencies & Esbuild
         run: |
           if [ ! -f package.json ]; then npm init -y; fi
-          # Added @capacitor/app and @capacitor/network for Back Button and Offline functionality
           npm install @capacitor/core@8 @capacitor/cli@8 @capacitor/android@8 @capacitor/splash-screen@8 @capacitor/app@8 @capacitor/network@8 capacitor-admob-nextgen@1.2.9 @onesignal/capacitor-plugin esbuild
 
       - name: Initialize AdMob SDK Variables
@@ -48,7 +47,6 @@ jobs:
           mkdir -p www
           rsync -av --exclude='.git' --exclude='.github' --exclude='www' --exclude='node_modules' ./ www/
 
-          # Create Native Bridge JS with Back Button and Offline Logic
           cat << 'EOF' > bridge.js
           import { Capacitor } from '@capacitor/core';
           import { AdMobNextGen } from 'capacitor-admob-nextgen';
@@ -105,10 +103,7 @@ jobs:
             }
           };
 
-          // Monitor network changes
           Network.addListener('networkStatusChange', checkNetwork);
-          
-          // Check network when DOM is loaded
           window.addEventListener('DOMContentLoaded', checkNetwork);
           EOF
 
@@ -155,10 +150,8 @@ jobs:
 
       - name: Inject Custom Notification Layout and Native Code
         run: |
-          # 0. EXPOSE ONESIGNAL SDK TO THE APP MODULE
           sed -i '/dependencies {/a \    compileOnly "com.onesignal:OneSignal:5.1.8"' android/app/build.gradle
 
-          # 1. Generate the XML layout file
           mkdir -p android/app/src/main/res/layout
           cat << 'EOF' > android/app/src/main/res/layout/custom_heads_up_notification.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -177,7 +170,6 @@ jobs:
           </LinearLayout>
           EOF
 
-          # 2. Generate the Java Service File (OneSignal SDK v5)
           mkdir -p android/app/src/main/java/com/yalatech/app
           cat << 'EOF' > android/app/src/main/java/com/yalatech/app/CustomNotificationService.java
           package com.yalatech.app; 
@@ -226,19 +218,16 @@ jobs:
           }
           EOF
 
-          # 3. Register the Java extension inside AndroidManifest.xml
           sed -i '/<\/application>/i \        <meta-data android:name="com.onesignal.NotificationServiceExtension" android:value="com.yalatech.app.CustomNotificationService" />' android/app/src/main/AndroidManifest.xml
 
       - name: Set Custom App and Notification Icons
         run: |
           python3 -m pip install --upgrade pillow --quiet
 
-          # Notification icons
           mkdir -p android/app/src/main/res/drawable
           cp s2.png android/app/src/main/res/drawable/ic_stat_onesignal_default.png 2>/dev/null || true
           cp s2.png android/app/src/main/res/drawable/ic_onesignal_large_icon_default.png 2>/dev/null || true
 
-          # Set adaptive icon background color to clean white
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/ic_launcher_background.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -247,7 +236,6 @@ jobs:
           </resources>
           EOF
 
-          # Generate safe-padded adaptive foreground icons to prevent edge clipping
           python3 - << 'EOF'
           import os
           from PIL import Image
@@ -267,12 +255,10 @@ jobs:
                   target_dir = f"android/app/src/main/res/{folder}"
                   os.makedirs(target_dir, exist_ok=True)
                   
-                  # Legacy icons
                   legacy_icon = img.resize((icon_sz, icon_sz), Image.Resampling.LANCZOS)
                   legacy_icon.save(f"{target_dir}/ic_launcher.png")
                   legacy_icon.save(f"{target_dir}/ic_launcher_round.png")
                   
-                  # Adaptive foreground: safe zone is 66% of fg_sz
                   fg_canvas = Image.new("RGBA", (fg_sz, fg_sz), (0, 0, 0, 0))
                   safe_sz = int(fg_sz * 0.66)
                   resized_logo = img.resize((safe_sz, safe_sz), Image.Resampling.LANCZOS)
@@ -309,8 +295,9 @@ jobs:
 
       - name: Set Version Code and Name
         run: |
-          sed -i 's/versionCode [0-9]*/versionCode 18/' android/app/build.gradle
-          # Uses the APP_VERSION variable you set at the top of the file
+          # Offsets the run number to be higher than your previous release version code (1789746179)
+          NEW_VERSION_CODE=$(( 1789746180 +${{ github.run_number }} ))
+          sed -i "s/versionCode [0-9]*/versionCode $NEW_VERSION_CODE/" android/app/build.gradle
           sed -i 's/versionName "[^"]*"/versionName "${{ env.APP_VERSION }}"/' android/app/build.gradle
 
       - name: Add Google Services JSON
@@ -357,10 +344,10 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Move & Rename AAB Output
-        run: mv android/app/build/outputs/bundle/release/app-release.aab yalatech.aab
+        run: mv android/app/build/outputs/bundle/release/app-release.aab yala-tech.aab
 
       - name: Upload Signed Release AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yalatech-aab
-          path: yalatech.aab
+          name: yala-tech-aab
+          path: yala-tech.aab
